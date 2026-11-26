@@ -9,7 +9,7 @@ import { definePluginSettings, Settings } from "@api/Settings";
 import { Logger } from "@utils/Logger";
 import { sleep } from "@utils/misc";
 import definePlugin, { OptionType } from "@utils/types";
-import { ChannelActions, ChannelStore, MediaEngineStore, NavigationRouter, SelectedChannelStore, showToast, VoiceActions } from "@webpack/common";
+import { ChannelActions, ChannelStore, MediaEngineStore, NavigationRouter, SelectedChannelStore, showToast, UserStore, VoiceActions } from "@webpack/common";
 
 const logger = new Logger("BetterTrayMenu");
 
@@ -22,8 +22,12 @@ const PATTERNS = {
         deafen: "deafen",
         channel: "voice-channel",
         disconnect: "disconnect",
+        account: "account",
+        reload: "reload",
         pluginPrefix: "plugin:"
     },
+    /** NativeUtils tray positions: the very top, and directly before Equibop's Restart item. */
+    positions: { top: "top", beforeRestart: "beforeRestart" },
     dmGuild: "@me",
     listSeparator: ",",
     maxLabelLength: 100,
@@ -33,6 +37,8 @@ const PATTERNS = {
 };
 
 const settings = definePluginSettings({
+    account: { type: OptionType.BOOLEAN, description: "Show which account you're logged in as at the top of the tray menu.", default: true, onChange: () => updateTray() },
+    reload: { type: OptionType.BOOLEAN, description: "Show Reload Equibop right before Restart in the tray menu. It reloads the Discord window.", default: true, onChange: () => updateTray() },
     mute: { type: OptionType.BOOLEAN, description: "Show a Mute toggle in the tray menu.", default: true, onChange: () => updateTray() },
     deafen: { type: OptionType.BOOLEAN, description: "Show a Deafen toggle in the tray menu.", default: true, onChange: () => updateTray() },
     voiceChannel: { type: OptionType.BOOLEAN, description: "Show your current voice channel in the tray menu. Clicking it opens the channel.", default: true, onChange: () => updateTray() },
@@ -45,6 +51,8 @@ interface TrayItem {
     label: string;
     type: "normal" | "checkbox" | "separator";
     checked?: boolean;
+    enabled?: boolean;
+    position?: string;
 }
 
 let running = false;
@@ -66,8 +74,11 @@ function pluginNames() {
 }
 
 function buildItems(): TrayItem[] {
-    const { mute, deafen, voiceChannel: showChannel, disconnect } = settings.store;
+    const { mute, deafen, voiceChannel: showChannel, disconnect, account, reload } = settings.store;
     const items: TrayItem[] = [];
+    const user = UserStore.getCurrentUser();
+    if (account && user) items.push({ id: PATTERNS.ids.account, label: `User: @${user.username}`.slice(0, PATTERNS.maxLabelLength), type: "normal", enabled: false, position: PATTERNS.positions.top });
+    if (reload) items.push({ id: PATTERNS.ids.reload, label: "Reload Equibop", type: "normal", position: PATTERNS.positions.beforeRestart });
     if (mute) items.push({ id: PATTERNS.ids.mute, label: "Mute", type: "checkbox", checked: MediaEngineStore.isSelfMute() });
     if (deafen) items.push({ id: PATTERNS.ids.deafen, label: "Deafen", type: "checkbox", checked: MediaEngineStore.isSelfDeaf() });
 
@@ -76,7 +87,7 @@ function buildItems(): TrayItem[] {
     if (channel && disconnect) items.push({ id: PATTERNS.ids.disconnect, label: "Disconnect", type: "normal" });
 
     const names = pluginNames().slice(0, PATTERNS.maxPluginToggles);
-    if (names.length && items.length) items.push({ id: "", label: "", type: "separator" });
+    if (names.length && items.some(item => !item.position)) items.push({ id: "", label: "", type: "separator" });
     for (const name of names) {
         const restart = pluginRequiresRestart(plugins[name]) ? " (restart)" : "";
         items.push({ id: PATTERNS.ids.pluginPrefix + name, label: `${name}${restart}`.slice(0, PATTERNS.maxLabelLength), type: "checkbox", checked: isPluginEnabled(name) });
@@ -114,6 +125,7 @@ function onClick(id: string) {
         case PATTERNS.ids.mute: return VoiceActions.toggleSelfMute();
         case PATTERNS.ids.deafen: return VoiceActions.toggleSelfDeaf();
         case PATTERNS.ids.disconnect: return ChannelActions.disconnect();
+        case PATTERNS.ids.reload: return location.reload();
         case PATTERNS.ids.channel: {
             const channel = voiceChannel();
             if (!channel) return;
@@ -146,7 +158,7 @@ async function clickLoop() {
 
 export default definePlugin({
     name: "BetterTrayMenu",
-    description: "Adds Mute, Deafen, your voice channel, Disconnect and plugin toggles to Equibop's tray menu. Needs the NativeUtils plugin; without it this does nothing.",
+    description: "Adds your account, Mute, Deafen, your voice channel, Disconnect, Reload Equibop and plugin toggles to Equibop's tray menu. Needs the NativeUtils plugin; without it this does nothing.",
     authors: [
         { name: "Bluscream", id: 467777925790564352n },
         { name: "Claude Opus 5.5", id: 0n }
@@ -157,7 +169,9 @@ export default definePlugin({
         AUDIO_TOGGLE_SELF_MUTE: updateTray,
         AUDIO_TOGGLE_SELF_DEAF: updateTray,
         VOICE_CHANNEL_SELECT: updateTray,
-        RTC_CONNECTION_STATE: updateTray
+        RTC_CONNECTION_STATE: updateTray,
+        CONNECTION_OPEN: updateTray,
+        CURRENT_USER_UPDATE: updateTray
     },
 
     start() {
