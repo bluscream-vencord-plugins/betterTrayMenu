@@ -12,7 +12,7 @@ Equicord user plugin: adds your account, voice controls, a reload item and plugi
 | Disconnect | Leaves voice. Only shown while you're in voice. |
 | Plugin toggles | One checkbox per plugin listed in the *plugins* setting (comma separated names, up to 10). Plugins that patch Discord's code need a restart; their label says so. |
 
-| Reload Equibop | Directly before Equibop's Restart: reloads the Discord window, without restarting the app. |
+| Reload | Directly before Equibop's Restart: reloads the Discord window, without restarting the app. |
 
 Each item can be turned off in the settings. The voice items and plugin toggles go in a block above Restart and Quit. To move, rename or hide any tray item, including Equibop's own, use the [MenuCustomisation](https://github.com/bluscream-vencord-plugins/menuCustomisation) plugin's tray menu editor.
 

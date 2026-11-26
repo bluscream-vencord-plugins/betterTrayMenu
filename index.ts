@@ -38,7 +38,7 @@ const PATTERNS = {
 
 const settings = definePluginSettings({
     account: { type: OptionType.BOOLEAN, description: "Show which account you're logged in as at the top of the tray menu.", default: true, onChange: () => updateTray() },
-    reload: { type: OptionType.BOOLEAN, description: "Show Reload Equibop right before Restart in the tray menu. It reloads the Discord window.", default: true, onChange: () => updateTray() },
+    reload: { type: OptionType.BOOLEAN, description: "Show Reload right before Restart in the tray menu. It reloads the Discord window.", default: true, onChange: () => updateTray() },
     mute: { type: OptionType.BOOLEAN, description: "Show a Mute toggle in the tray menu.", default: true, onChange: () => updateTray() },
     deafen: { type: OptionType.BOOLEAN, description: "Show a Deafen toggle in the tray menu.", default: true, onChange: () => updateTray() },
     voiceChannel: { type: OptionType.BOOLEAN, description: "Show your current voice channel in the tray menu. Clicking it opens the channel.", default: true, onChange: () => updateTray() },
@@ -78,7 +78,7 @@ function buildItems(): TrayItem[] {
     const items: TrayItem[] = [];
     const user = UserStore.getCurrentUser();
     if (account && user) items.push({ id: PATTERNS.ids.account, label: `User: @${user.username}`.slice(0, PATTERNS.maxLabelLength), type: "normal", enabled: false, position: PATTERNS.positions.top });
-    if (reload) items.push({ id: PATTERNS.ids.reload, label: "Reload Equibop", type: "normal", position: PATTERNS.positions.beforeRestart });
+    if (reload) items.push({ id: PATTERNS.ids.reload, label: "Reload", type: "normal", position: PATTERNS.positions.beforeRestart });
     if (mute) items.push({ id: PATTERNS.ids.mute, label: "Mute", type: "checkbox", checked: MediaEngineStore.isSelfMute() });
     if (deafen) items.push({ id: PATTERNS.ids.deafen, label: "Deafen", type: "checkbox", checked: MediaEngineStore.isSelfDeaf() });
 
@@ -158,7 +158,7 @@ async function clickLoop() {
 
 export default definePlugin({
     name: "BetterTrayMenu",
-    description: "Adds your account, Mute, Deafen, your voice channel, Disconnect, Reload Equibop and plugin toggles to Equibop's tray menu. Needs the NativeUtils plugin; without it this does nothing.",
+    description: "Adds your account, Mute, Deafen, your voice channel, Disconnect, Reload and plugin toggles to Equibop's tray menu. Needs the NativeUtils plugin; without it this does nothing.",
     authors: [
         { name: "Bluscream", id: 467777925790564352n },
         { name: "Claude Opus 5.5", id: 0n }
